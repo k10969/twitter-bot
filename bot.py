@@ -1,38 +1,55 @@
-import tweepy
+import os
+import requests
 import random
 import time
 from datetime import datetime
-import os
 
-# Twitter APIの認証
-auth = tweepy.OAuth1UserHandler(
-    os.getenv("API_KEY"), os.getenv("API_SECRET_KEY"),
-    os.getenv("ACCESS_TOKEN"), os.getenv("ACCESS_TOKEN_SECRET")
-)
-api = tweepy.API(auth)
+# Twitter API v2のエンドポイント
+TWITTER_API_URL = "https://api.twitter.com/2/users/{}/tweets"
 
-# 監視するアカウントのリスト
-target_accounts = ["@_09x", "@account2"]  # ここに監視したいアカウントを入力
+# Bearer Tokenの設定
+BEARER_TOKEN = os.getenv("BEARER_TOKEN")
+
+# 監視するアカウントのIDリスト
+target_user_ids = ["ユーザーID1", "ユーザーID2"]  # ここに監視したいユーザーIDを入力
 
 # リプライのリスト
-replies = ["Reply 1", "Reply 2", "Reply 3"]  # ここにリプライ内容を入力
+replies = ["Reply 1", "Reply 2", "Reply 3"]
 
 # 1日のツイート数をカウントする変数
 daily_tweet_count = 0
 
+def get_user_tweets(user_id):
+    """ユーザーのツイートを取得する関数"""
+    url = TWITTER_API_URL.format(user_id)
+    headers = {
+        "Authorization": f"Bearer {BEARER_TOKEN}"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        return None
+
 def check_tweets():
     global daily_tweet_count
-    for account in target_accounts:
-        tweets = api.user_timeline(screen_name=account, count=1, tweet_mode="extended")
-        for tweet in tweets:
-            if not tweet.retweeted and not tweet.favorited:
-                if daily_tweet_count < 40:  # 1日のツイート数を40回に制限
-                    reply = random.choice(replies)
-                    api.update_status(f"@{tweet.user.screen_name} {reply}", in_reply_to_status_id=tweet.id)
-                    daily_tweet_count += 1
-                    print(f"Replied to {tweet.user.screen_name} with {reply}")
-                else:
-                    print("Daily tweet limit reached.")
+    for user_id in target_user_ids:
+        tweets_data = get_user_tweets(user_id)
+        if tweets_data and "data" in tweets_data:
+            latest_tweet = tweets_data["data"][0]  # 最新のツイートを取得
+            tweet_id = latest_tweet["id"]
+            tweet_text = latest_tweet["text"]
+            print(f"Latest tweet from {user_id}: {tweet_text}")
+
+            # ここにリプライを送信する処理を追加
+            if daily_tweet_count < 40:  # 1日のツイート数を40回に制限
+                reply = random.choice(replies)
+                # リプライを送信する処理（API v2のエンドポイントを使用）
+                print(f"Replying to {user_id} with: {reply}")
+                daily_tweet_count += 1
+            else:
+                print("Daily tweet limit reached.")
 
 # 毎日ツイートカウントをリセットする関数
 def reset_daily_tweet_count():
