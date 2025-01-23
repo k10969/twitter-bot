@@ -11,7 +11,7 @@ TWITTER_API_URL = "https://api.twitter.com/2/users/{}/tweets"
 BEARER_TOKEN = os.getenv("AAAAAAAAAAAAAAAAAAAAABCBtgEAAAAA4SNS70TjAzp0p5saCM6uDZtBDB0%3DDwBMQ5bxpL8M5bu5nXtVMW10o6svd7qaRaTT42gmlO8CRYHVTP")
 
 # 監視するアカウントのIDリスト
-target_user_ids = ["ユーザーID1", "ユーザーID2"]  # ここに監視したいユーザーIDを入力
+target_user_ids = ["1285420694", "ユーザーID2"]  # ここに監視したいユーザーIDを入力
 
 # リプライのリスト
 replies = ["Reply 1", "Reply 2", "Reply 3"]
