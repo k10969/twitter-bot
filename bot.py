@@ -14,7 +14,7 @@ BEARER_TOKEN = os.getenv("AAAAAAAAAAAAAAAAAAAAABCBtgEAAAAA4SNS70TjAzp0p5saCM6uDZ
 target_user_ids = ["1285420694", "ユーザーID2"]  # ここに監視したいユーザーIDを入力
 
 # リプライのリスト
-replies = ["Reply 1", "Reply 2", "Reply 3"]
+replies = ["テスト", "Reply 2", "Reply 3"]
 
 # 1日のツイート数をカウントする変数
 daily_tweet_count = 0
