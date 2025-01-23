@@ -11,7 +11,7 @@ app = Flask(__name__)
 TWITTER_API_URL = "https://api.twitter.com/2/users/{}/tweets"
 
 # Bearer Tokenの設定
-BEARER_TOKEN = os.getenv("AAAAAAAAAAAAAAAAAAAAABCBtgEAAAAA4SNS70TjAzp0p5saCM6uDZtBDB0%3DDwBMQ5bxpL8M5bu5nXtVMW10o6svd7qaRaTT42gmlO8CRYHVTP")
+BEARER_TOKEN = os.getenv("AAAAAAAAAAAAAAAAAAAAAGO8yQEAAAAATeaAbfQ2sZWKyScVhZHPOVh31is%3DhHlxPmVKlyDuRDW9JgeLzPV3IR8ZcjdYRwA1gmQXDIz7sdvT0y")
 
 # 監視するアカウントのIDリスト
 target_user_ids = ["44196397"]  # ここに監視したいユーザーIDを入力
