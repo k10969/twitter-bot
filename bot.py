@@ -12,7 +12,7 @@ auth = tweepy.OAuth1UserHandler(
 api = tweepy.API(auth)
 
 # 監視するアカウントのリスト
-target_accounts = ["@account1", "@account2"]  # ここに監視したいアカウントを入力
+target_accounts = ["@_09x", "@account2"]  # ここに監視したいアカウントを入力
 
 # リプライのリスト
 replies = ["Reply 1", "Reply 2", "Reply 3"]  # ここにリプライ内容を入力
