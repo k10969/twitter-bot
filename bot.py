@@ -1,8 +1,11 @@
+from flask import Flask
 import os
 import requests
 import random
 import time
 from datetime import datetime
+
+app = Flask(__name__)
 
 # Twitter API v2のエンドポイント
 TWITTER_API_URL = "https://api.twitter.com/2/users/{}/tweets"
@@ -11,10 +14,10 @@ TWITTER_API_URL = "https://api.twitter.com/2/users/{}/tweets"
 BEARER_TOKEN = os.getenv("AAAAAAAAAAAAAAAAAAAAABCBtgEAAAAA4SNS70TjAzp0p5saCM6uDZtBDB0%3DDwBMQ5bxpL8M5bu5nXtVMW10o6svd7qaRaTT42gmlO8CRYHVTP")
 
 # 監視するアカウントのIDリスト
-target_user_ids = ["1285420694", "ユーザーID2"]  # ここに監視したいユーザーIDを入力
+target_user_ids = ["44196397"]  # ここに監視したいユーザーIDを入力
 
 # リプライのリスト
-replies = ["テスト", "Reply 2", "Reply 3"]
+replies = ["テストおおお", "Reply 2", "Reply 3"]
 
 # 1日のツイート数をカウントする変数
 daily_tweet_count = 0
@@ -56,11 +59,10 @@ def reset_daily_tweet_count():
     global daily_tweet_count
     daily_tweet_count = 0
 
-# メインループ
+@app.route('/')
+def home():
+    return "Twitter Bot is running!"
+
 if __name__ == "__main__":
-    while True:
-        now = datetime.now()
-        if now.hour == 0 and now.minute == 0:  # 毎日0時にツイートカウントをリセット
-            reset_daily_tweet_count()
-        check_tweets()
-        time.sleep(60)  # 1分ごとにチェック
+    # Flaskアプリを起動
+    app.run(host='0.0.0.0', port=10000)
