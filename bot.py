@@ -8,18 +8,21 @@ access_token = os.getenv("TWITTER_ACCESS_TOKEN")
 access_token_secret = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 # ストリームリスナーの定義
-class MyStreamListener(tweepy.Stream):
-    def on_status(self, status):
-        print(f"新しいツイート: {status.text}")
+class MyStreamListener(tweepy.StreamingClient):
+    def on_tweet(self, tweet):
+        print(f"新しいツイート: {tweet.text}")
 
 # ストリームの開始
 try:
+    # ストリームリスナーのインスタンスを作成
     stream = MyStreamListener(
-        api_key,
-        api_secret,
-        access_token,
-        access_token_secret
+        bearer_token=os.getenv("TWITTER_BEARER_TOKEN")  # Bearer Tokenが必要
     )
-    stream.filter(follow=["1285420694"])  # 監視したいユーザーのIDを指定
-except Exception as e:
-    print(f"ストリームエラー: {str(e)}")
+
+    # 監視するユーザーのIDを指定
+    user = api.get_user(screen_name="@_09x")  # 監視したいユーザー名を指定
+    user_id = user.id_str
+    print(f"ユーザーID: {user_id}")
+
+    # ユーザーのツイートを監視
+    stream.filter(f
