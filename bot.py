@@ -19,31 +19,26 @@ access_token_secret = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 if not all([api_key, api_secret, access_token, access_token_secret]):
     print("エラー: 必要な環境変数が設定されていません")
-    print("以下の環境変数が必要です:")
-    print("- TWITTER_API_KEY")
-    print("- TWITTER_API_SECRET")
-    print("- TWITTER_ACCESS_TOKEN")
-    print("- TWITTER_ACCESS_TOKEN_SECRET")
     exit(1)
 
-# Twitter APIの認証
+# Twitter API v2の認証
 try:
-    auth = tweepy.OAuth1UserHandler(
-        api_key,
-        api_secret,
-        access_token,
-        access_token_secret
+    client = tweepy.Client(
+        consumer_key=api_key,
+        consumer_secret=api_secret,
+        access_token=access_token,
+        access_token_secret=access_token_secret
     )
-    api = tweepy.API(auth)
-    print("Twitter API認証成功!")
+    print("Twitter API v2認証成功!")
 except Exception as e:
     print(f"Twitter API認証エラー: {str(e)}")
     exit(1)
 
 # テストツイートを投稿
 try:
-    tweet_text = "これはテストツイートです。APIが正しく動作しているかを確認しています。"
-    api.update_status(tweet_text)
+    tweet_text = "これはテストツイートです。API v2を使用しています。"
+    response = client.create_tweet(text=tweet_text)
     print(f"ツイートを投稿しました: {tweet_text}")
+    print(f"ツイートID: {response.data['id']}")
 except Exception as e:
     print(f"ツイート投稿エラー: {str(e)}")
