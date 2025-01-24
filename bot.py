@@ -71,3 +71,12 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"メインループエラー: {str(e)}")
             time.sleep(60)  # エラー時も1分待機
+try:
+    # ユーザー情報を取得
+    user = client.get_user(username=account.replace("@", ""))
+    if user.data:
+        print(f"ユーザー情報: {user.data}")
+    else:
+        print(f"ユーザー {account} が見つかりません")
+except Exception as e:
+    print(f"ユーザー情報取得エラー: {str(e)}")
