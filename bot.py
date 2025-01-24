@@ -7,15 +7,6 @@ api_secret = os.getenv("TWITTER_API_SECRET")
 access_token = os.getenv("TWITTER_ACCESS_TOKEN")
 access_token_secret = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
-# Twitter API v1.1の認証
-auth = tweepy.OAuth1UserHandler(
-    api_key,
-    api_secret,
-    access_token,
-    access_token_secret
-)
-api = tweepy.API(auth)
-
 # ストリームリスナーの定義
 class MyStreamListener(tweepy.Stream):
     def on_status(self, status):
