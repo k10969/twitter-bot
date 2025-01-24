@@ -1,4 +1,5 @@
 import os
+import time
 import tweepy
 
 # APIキーの取得
@@ -27,5 +28,11 @@ try:
         print(f"ユーザーID: {user_id}")
     else:
         print("ユーザーが見つかりません")
+except tweepy.TooManyRequests as e:
+    print(f"レートリミットに達しました: {str(e)}")
+    reset_time = int(e.response.headers.get("x-rate-limit-reset"))  # リセット時刻を取得
+    sleep_time = reset_time - int(time.time())  # リセットまでの待機時間を計算
+    print(f"リセットまで {sleep_time} 秒待機します...")
+    time.sleep(sleep_time)  # リセットまで待機
 except Exception as e:
     print(f"ユーザー情報取得エラー: {str(e)}")
