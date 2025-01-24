@@ -17,27 +17,15 @@ client = tweepy.Client(
     access_token_secret=access_token_secret
 )
 
-# ストリームリスナーの定義
-class MyStreamListener(tweepy.StreamingClient):
-    def on_tweet(self, tweet):
-        print(f"新しいツイート: {tweet.text}")
-
 # ユーザー情報を取得
 try:
-    user = client.get_user(username="@_09x")  # 監視したいユーザー名を指定
+    username = "@_09x"  # 監視したいユーザー名
+    username_cleaned = username.replace("@", "")  # @ を除去
+    user = client.get_user(username=username_cleaned)  # クリーンなユーザー名を使用
     if user.data:
         user_id = user.data.id
         print(f"ユーザーID: {user_id}")
     else:
         print("ユーザーが見つかりません")
-        exit(1)
 except Exception as e:
     print(f"ユーザー情報取得エラー: {str(e)}")
-    exit(1)
-
-# ストリームの開始
-try:
-    stream = MyStreamListener(bearer_token=bearer_token)
-    stream.filter(follow=[user_id])  # ユーザーIDを指定
-except Exception as e:
-    print(f"ストリームエラー: {str(e)}")
