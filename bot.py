@@ -6,8 +6,9 @@ import tweepy
 
 # Twitter APIの認証
 auth = tweepy.OAuth1UserHandler(
-    os.getenv("API_KEY"), os.getenv("API_SECRET_KEY"),
-    os.getenv("ACCESS_TOKEN"), os.getenv("ACCESS_TOKEN_SECRET")
+    os.getenv("dggOuuYAM8xxngl8n5ukIc6OT"), os.getenv("noXO4uWN5Cn9LoFj3c8oMbW3RalTj93lSLe6XQyCcvSE5fHoc1"),
+    os.getenv("1772560498900516864-gdmQnN0dWn95g645tqbAVyp8L4LebW
+"), os.getenv("b7FM7ub5eiEwHYL9Tgd6Yl7VBrtIeBs4fonKRSPvnmms6")
 )
 api = tweepy.API(auth)
 
@@ -15,7 +16,7 @@ api = tweepy.API(auth)
 target_accounts = ["@_09x", "@account2"]  # ここに監視したいアカウントを入力
 
 # リプライのリスト
-replies = ["テスト", "Reply 2", "Reply 3"]  # ここにリプライ内容を入力
+replies = ["テストだよ", "Reply 2", "Reply 3"]  # ここにリプライ内容を入力
 
 # 1日のツイート数をカウントする変数
 daily_tweet_count = 0
