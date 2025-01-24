@@ -24,5 +24,4 @@ try:
     user_id = user.id_str
     print(f"ユーザーID: {user_id}")
 
-    # ユーザーのツイートを監視
-    stream.filter(f
+stream.filter(follow=[user_id])  # ユーザーIDを指定
