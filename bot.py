@@ -29,6 +29,6 @@ try:
         access_token,
         access_token_secret
     )
-    stream.filter(follow=["ユーザーID"])  # 監視したいユーザーのIDを指定
+    stream.filter(follow=["1285420694"])  # 監視したいユーザーのIDを指定
 except Exception as e:
     print(f"ストリームエラー: {str(e)}")
