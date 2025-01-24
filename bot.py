@@ -8,27 +8,31 @@ access_token = os.getenv("TWITTER_ACCESS_TOKEN")
 access_token_secret = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 bearer_token = os.getenv("TWITTER_BEARER_TOKEN")  # Bearer Token
 
-# Twitter API v1.1の認証（ユーザー情報取得用）
-auth = tweepy.OAuth1UserHandler(
-    api_key,
-    api_secret,
-    access_token,
-    access_token_secret
+# Twitter API v2の認証
+client = tweepy.Client(
+    bearer_token=bearer_token,
+    consumer_key=api_key,
+    consumer_secret=api_secret,
+    access_token=access_token,
+    access_token_secret=access_token_secret
 )
-api = tweepy.API(auth)
 
 # ストリームリスナーの定義
 class MyStreamListener(tweepy.StreamingClient):
     def on_tweet(self, tweet):
         print(f"新しいツイート: {tweet.text}")
 
-# ユーザーIDを取得
+# ユーザー情報を取得
 try:
-    user = api.get_user(screen_name="@_09x")  # 監視したいユーザー名を指定
-    user_id = user.id_str
-    print(f"ユーザーID: {user_id}")
+    user = client.get_user(username="@_09x")  # 監視したいユーザー名を指定
+    if user.data:
+        user_id = user.data.id
+        print(f"ユーザーID: {user_id}")
+    else:
+        print("ユーザーが見つかりません")
+        exit(1)
 except Exception as e:
-    print(f"ユーザーID取得エラー: {str(e)}")
+    print(f"ユーザー情報取得エラー: {str(e)}")
     exit(1)
 
 # ストリームの開始
