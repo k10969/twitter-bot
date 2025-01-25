@@ -1,54 +1,35 @@
 import os
 import time
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-
-# Chromeオプション設定
-options = Options()
-options.binary_location = "/usr/bin/chromium-browser"  # Render用パス
-options.add_argument("--headless")
-options.add_argument("--disable-gpu")
-
-# ChromeDriver自動管理
-driver = webdriver.Chrome(
-    ChromeDriverManager().install(),
-    options=options
-)
 
 # 設定
 TARGET_USERNAME = "_09x"
-TWITTER_LOGIN_URL = "https://twitter.com/login"
-TWITTER_USER_URL = f"https://twitter.com/{TARGET_USERNAME}"
-REPLIES = ["今日も元気ですね！", "面白いツイートありがとう！"]
 CHECK_INTERVAL = 1800  # 30分間隔
 MAX_DAILY_REPLIES = 5
 
 class TwitterBot:
     def __init__(self):
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
+        options = Options()
+        options.binary_location = "/usr/bin/chromium"  # Render用パス
+        options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
         
-        service = Service(ChromeDriverManager().install())
-        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+        # ChromeDriver自動管理
+        self.driver = webdriver.Chrome(
+            ChromeDriverManager().install(),
+            options=options
+        )
         self.reply_count = 0
-        self.last_tweet = None
 
     def login(self):
-        self.driver.get(TWITTER_LOGIN_URL)
+        self.driver.get("https://twitter.com/login")
         time.sleep(random.uniform(3,5))
-        # ログイン処理（環境変数を使用）
         username = os.getenv("TWITTER_USERNAME")
         password = os.getenv("TWITTER_PASSWORD")
         self.driver.find_element(By.NAME, "text").send_keys(username)
@@ -62,8 +43,8 @@ class TwitterBot:
         self.login()
         while True:
             try:
-                self.check_tweets()
-                time.sleep(CHECK_INTERVAL + random.randint(-300, 300))
+                # ツイート監視処理
+                time.sleep(CHECK_INTERVAL)
             except Exception as e:
                 print(f"エラー発生: {str(e)}")
                 time.sleep(600)
