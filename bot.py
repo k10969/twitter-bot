@@ -31,7 +31,15 @@ chrome_options.add_argument("--disable-dev-shm-usage")
 
 class TwitterBot:
     def __init__(self):
-        self.driver = webdriver.Chrome(options=chrome_options)
+        # Chromeオプションの設定
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        
+        # ここが修正ポイント
+        self.driver = webdriver.Chrome(
+            executable_path="./chromedriver",  # 追加
+            options=chrome_options
+        )
         self.reply_count = 0
         self.last_tweet = None
 
@@ -100,7 +108,3 @@ class TwitterBot:
 if __name__ == "__main__":
     bot = TwitterBot()
     bot.run()
-self.driver = webdriver.Chrome(
-    executable_path="./chromedriver",  # 自動で配置されるファイル
-    options=chrome_options
-)
