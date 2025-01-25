@@ -1,125 +1,102 @@
 import os
-import tweepy
-import random
 import time
+import random
 from datetime import datetime, timedelta
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 
-# 環境変数から認証情報を取得
-BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
-API_KEY = os.getenv("TWITTER_API_KEY")
-API_SECRET = os.getenv("TWITTER_API_SECRET")
-
-# 監視設定
-TARGET_USERNAME = "_09x"  # 監視対象のユーザー名
-CHECK_INTERVAL = 1800     # 30分間隔（秒）に変更
-HISTORY_FILE = "processed_tweets.txt"
-
-# リプライメッセージリスト
+# 設定
+TARGET_USERNAME = "_09x"  # 監視対象ユーザー
+TWITTER_LOGIN_URL = "https://twitter.com/login"
+TWITTER_USER_URL = f"https://twitter.com/{TARGET_USERNAME}"
 REPLIES = [
     "今日も元気ですね！",
-    "興味深いツイートありがとう！",
-    "参考になります！",
-    "素敵な情報をシェアしてくれて感謝です！"
+    "面白いツイートありがとう！",
+    "参考になります！"
 ]
+CHECK_INTERVAL = 900  # 15分間隔（秒）
+MAX_DAILY_REPLIES = 5  # 1日あたりの最大リプライ数
 
-class TwitterMonitor:
+# ログイン情報
+TWITTER_USERNAME = os.getenv("TWITTER_USERNAME")
+TWITTER_PASSWORD = os.getenv("TWITTER_PASSWORD")
+
+# ブラウザ設定
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # ヘッドレスモード
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+
+class TwitterBot:
     def __init__(self):
-        self.client = tweepy.Client(
-            bearer_token=BEARER_TOKEN,
-            consumer_key=API_KEY,
-            consumer_secret=API_SECRET
-        )
-        self.processed_tweets = self.load_processed_tweets()
-        self.target_user_id = self.get_user_id_with_retry()
-        self.last_api_call = datetime.now() - timedelta(minutes=30)
+        self.driver = webdriver.Chrome(options=chrome_options)
+        self.reply_count = 0
+        self.last_tweet = None
 
-    def get_user_id_with_retry(self, retries=3, backoff_factor=2):
-        for attempt in range(retries):
+    def login(self):
+        self.driver.get(TWITTER_LOGIN_URL)
+        time.sleep(random.uniform(3, 5))
+        self.driver.find_element(By.NAME, "text").send_keys(TWITTER_USERNAME)
+        time.sleep(random.uniform(1, 2))
+        self.driver.find_element(By.XPATH, "//div[@role='button'][contains(text(),'次へ')]").click()
+        time.sleep(random.uniform(2, 3))
+        self.driver.find_element(By.NAME, "password").send_keys(TWITTER_PASSWORD)
+        time.sleep(random.uniform(1, 2))
+        self.driver.find_element(By.XPATH, "//div[@role='button'][contains(text(),'ログイン')]").click()
+        time.sleep(random.uniform(5, 7))
+
+    def get_latest_tweet(self):
+        self.driver.get(TWITTER_USER_URL)
+        time.sleep(random.uniform(5, 7))
+        tweets = self.driver.find_elements(By.XPATH, "//article[@data-testid='tweet']")
+        if tweets:
+            return tweets[0].text
+        return None
+
+    def send_reply(self, tweet_url):
+        if self.reply_count >= MAX_DAILY_REPLIES:
+            print("1日のリプライ上限に達しました")
+            return
+
+        self.driver.get(tweet_url)
+        time.sleep(random.uniform(3, 5))
+        self.driver.find_element(By.XPATH, "//div[@aria-label='返信']").click()
+        time.sleep(random.uniform(1, 2))
+        reply_box = self.driver.find_element(By.XPATH, "//div[@role='textbox']")
+        reply_box.send_keys(random.choice(REPLIES))
+        time.sleep(random.uniform(1, 2))
+        self.driver.find_element(By.XPATH, "//div[@data-testid='tweetButton']").click()
+        time.sleep(random.uniform(3, 5))
+        self.reply_count += 1
+        print(f"リプライ送信: {self.reply_count}/{MAX_DAILY_REPLIES}")
+
+    def run(self):
+        self.login()
+        while True:
             try:
-                user = self.client.get_user(username=TARGET_USERNAME)
-                return user.data.id
-            except tweepy.TweepyException as e:
-                if e.response.status_code == 429:
-                    wait_time = backoff_factor ** (attempt + 1)
-                    print(f"レートリミット検出. {wait_time}秒待機...")
-                    time.sleep(wait_time)
-                else:
-                    print(f"ユーザーID取得エラー: {e}")
-                    exit(1)
-        print("最大再試行回数に達しました")
-        exit(1)
+                current_time = datetime.now()
+                if current_time.hour < 7 or current_time.hour > 22:  # 夜間は停止
+                    print("夜間は停止中...")
+                    time.sleep(3600)
+                    continue
 
-    def load_processed_tweets(self):
-        try:
-            with open(HISTORY_FILE, "r") as f:
-                return set(f.read().splitlines())
-        except FileNotFoundError:
-            open(HISTORY_FILE, 'w').close()
-            return set()
+                current_tweet = self.get_latest_tweet()
+                if current_tweet and current_tweet != self.last_tweet:
+                    print("新しいツイートを検出:", current_tweet)
+                    tweet_url = self.driver.current_url
+                    self.send_reply(tweet_url)
+                    self.last_tweet = current_tweet
 
-    def save_tweet_id(self, tweet_id):
-        with open(HISTORY_FILE, "a") as f:
-            f.write(f"{tweet_id}\n")
-        self.processed_tweets.add(tweet_id)
+                sleep_time = CHECK_INTERVAL + random.uniform(-60, 60)  # ランダムな待機時間
+                print(f"次のチェックまで{sleep_time}秒待機...")
+                time.sleep(sleep_time)
 
-    def check_new_tweets(self):
-        try:
-            current_time = datetime.now()
-            if (current_time - self.last_api_call).seconds < CHECK_INTERVAL:
-                print("レートリミット回避のためスキップ")
-                return
-
-            tweets = self.client.get_users_tweets(
-                self.target_user_id,
-                exclude=["replies", "retweets"],
-                tweet_fields=["created_at"],
-                max_results=5
-            )
-
-            new_tweets = [
-                t for t in tweets.data 
-                if t.id not in self.processed_tweets
-                and datetime.utcnow() - t.created_at < timedelta(minutes=30)
-            ]
-
-            for tweet in reversed(new_tweets):
-                self.send_reply(tweet.id)
-                self.save_tweet_id(tweet.id)
-
-            self.last_api_call = datetime.now()
-
-        except tweepy.TweepyException as e:
-            if e.response.status_code == 429:
-                reset_time = int(e.response.headers.get('x-rate-limit-reset', 0))
-                wait_seconds = max(reset_time - int(time.time()), 300)
-                print(f"レートリミット到達. {wait_seconds}秒待機...")
-                time.sleep(wait_seconds)
-            else:
-                print(f"APIエラー: {e}")
-
-    def send_reply(self, tweet_id):
-        try:
-            auth = tweepy.OAuth1UserHandler(API_KEY, API_SECRET)
-            api = tweepy.API(auth, wait_on_rate_limit=True)
-            
-            reply_text = f"{random.choice(REPLIES)}"
-            api.update_status(
-                status=reply_text,
-                in_reply_to_status_id=tweet_id,
-                auto_populate_reply_metadata=True
-            )
-            print(f"リプライ送信: {reply_text}")
-            time.sleep(60)  # リプライ間隔を保証
-
-        except Exception as e:
-            print(f"リプライ失敗: {e}")
+            except Exception as e:
+                print(f"エラーが発生しました: {e}")
+                time.sleep(600)  # エラー時は10分待機
 
 if __name__ == "__main__":
-    monitor = TwitterMonitor()
-    while True:
-        print(f"{datetime.now()} チェック開始...")
-        monitor.check_new_tweets()
-        sleep_duration = CHECK_INTERVAL - (datetime.now() - monitor.last_api_call).seconds
-        if sleep_duration > 0:
-            print(f"次のチェックまで{sleep_duration}秒待機")
-            time.sleep(sleep_duration)
+    bot = TwitterBot()
+    bot.run()
