@@ -8,6 +8,22 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+
+# Chromeオプション設定
+options = Options()
+options.binary_location = "/usr/bin/chromium-browser"  # Render用パス
+options.add_argument("--headless")
+options.add_argument("--disable-gpu")
+
+# ChromeDriver自動管理
+driver = webdriver.Chrome(
+    ChromeDriverManager().install(),
+    options=options
+)
+
 # 設定
 TARGET_USERNAME = "_09x"
 TWITTER_LOGIN_URL = "https://twitter.com/login"
