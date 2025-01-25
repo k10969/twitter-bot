@@ -3,9 +3,12 @@ import time
 import random
 from datetime import datetime, timedelta
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By  # 追加
-from webdriver_manager.chrome import ChromeDriverManager  # 追加
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+# ChromeDriverの自動管理
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=chrome_options)
 
 # 設定（変更なし）
 TARGET_USERNAME = "_09x"
