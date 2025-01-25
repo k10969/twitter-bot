@@ -100,3 +100,7 @@ class TwitterBot:
 if __name__ == "__main__":
     bot = TwitterBot()
     bot.run()
+self.driver = webdriver.Chrome(
+    executable_path="./chromedriver",  # 自動で配置されるファイル
+    options=chrome_options
+)
