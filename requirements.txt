@@ -1,7 +1,2 @@
-# プロジェクトルートで実行
-echo "selenium" > requirements.txt
-echo "python-dotenv" >> requirements.txt
-
-git add requirements.txt
-git commit -m "Add dependencies"
-git push origin main
+selenium==4.9.1
+python-dotenv==1.0.0
