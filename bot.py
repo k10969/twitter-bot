@@ -2,69 +2,78 @@ import os
 import asyncio
 import random
 from datetime import datetime
-from twikit import Client
+from twikit import Client, TwitterError
 
-# 環境変数から設定取得
-TWITTER_USERNAME = os.getenv('TWITTER_USERNAME')
-TWITTER_PASSWORD = os.getenv('TWITTER_PASSWORD')
-TARGET_ACCOUNT = os.getenv('TARGET_ACCOUNT')  # 追加
-MAX_DAILY_REPLIES = 40
+# 環境変数設定
+TWITTER_USER = os.getenv('TWITTER_USERNAME')
+TWITTER_PASS = os.getenv('TWITTER_PASSWORD')
+TARGET_USER = os.getenv('TARGET_ACCOUNT')  # @なしのスクリーンネーム
+MAX_REPLIES = 40
 
-# 環境変数チェック
-if not all([TWITTER_USERNAME, TWITTER_PASSWORD, TARGET_ACCOUNT]):
-    raise ValueError("必要な環境変数が設定されていません")
-
-class TwitterBot:
+class AdvancedTwitterBot:
     def __init__(self):
         self.client = Client('ja-JP')
-        self.processed_tweets = set()
-        self.reply_count = 0
+        self.reply_counter = 0
+        self.last_reset = datetime.now()
+        self.processed = set()
 
     async def initialize(self):
-        if os.path.exists('cookies.json'):
-            self.client.load_cookies('cookies.json')
-        else:
-            await self.client.login(
-                auth_info_1=TWITTER_USERNAME,
-                password=TWITTER_PASSWORD
-            )
-            self.client.save_cookies('cookies.json')
-
-    async def check_tweets(self):
         try:
-            user = await self.client.get_user_by_screen_name(TARGET_ACCOUNT)
-            tweets = await self.client.get_user_tweets(user.id, 'Tweets')
+            if os.path.exists('auth.json'):
+                self.client.load_auth('auth.json')
+            else:
+                await self.client.login(
+                    account=TWITTER_USER,
+                    password=TWITTER_PASS
+                )
+                self.client.save_auth('auth.json')
+        except TwitterError as e:
+            print(f"認証失敗: {e}")
+            exit(1)
+
+    async def monitor_account(self):
+        try:
+            user = await self.client.get_user(TARGET_USER)
+            tweets = await user.get_tweets('Tweets')
             
             for tweet in reversed(tweets):
-                if tweet.id not in self.processed_tweets:
-                    if self.reply_count < MAX_DAILY_REPLIES:
-                        await self.reply_to_tweet(tweet)
-                        self.processed_tweets.add(tweet.id)
-                        self.reply_count += 1
+                if tweet.id not in self.processed:
+                    if self.check_limits():
+                        await self.smart_reply(tweet)
+                        self.processed.add(tweet.id)
+                        self.reply_counter += 1
                     else:
-                        print("⚠️ 本日のリプライ上限到達")
-        except Exception as e:
-            print(f"監視エラー: {str(e)}")
+                        print("⚠️ 本日の上限到達")
+                        return
+        except TwitterError as e:
+            print(f"監視エラー: {e}")
 
-    async def reply_to_tweet(self, tweet):
+    async def smart_reply(self, tweet):
         try:
-            replies = ["参考になります！", "素晴らしい情報をありがとう！"]
+            replies = [
+                "参考になります！",
+                "素晴らしい情報を共有いただき感謝します",
+                "勉強になります！"
+            ]
             await tweet.reply(random.choice(replies))
             print(f"✅ リプライ成功: {tweet.id}")
-            await asyncio.sleep(random.randint(60, 300))
-        except Exception as e:
-            print(f"リプライ失敗: {str(e)}")
+            await asyncio.sleep(random.randint(120, 600))  # 安全待機時間
+        except TwitterError as e:
+            print(f"リプライ失敗: {e}")
+
+    def check_limits(self):
+        # 日次リセット & レート制限チェック
+        if (datetime.now() - self.last_reset).days >= 1:
+            self.reply_counter = 0
+            self.last_reset = datetime.now()
+        return self.reply_counter < MAX_REPLIES
 
     async def run(self):
         await self.initialize()
         while True:
-            if datetime.now().hour == 0:  # 日次リセット
-                self.reply_count = 0
-                self.processed_tweets.clear()
-            
-            await self.check_tweets()
-            await asyncio.sleep(random.randint(900, 2700))
+            await self.monitor_account()
+            await asyncio.sleep(random.randint(1800, 3600))  # 30-60分間隔
 
 if __name__ == "__main__":
-    bot = TwitterBot()
+    bot = AdvancedTwitterBot()
     asyncio.run(bot.run())
