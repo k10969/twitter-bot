@@ -2,8 +2,7 @@ import os
 import time
 import random
 from datetime import datetime, timedelta
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+from selenium import webdriver  # ここがエラー発生行
 from selenium.webdriver.chrome.options import Options
 
 # 設定
