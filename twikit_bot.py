@@ -80,12 +80,22 @@ class TwitterBot:
 
 # 使用例
 if __name__ == "__main__":
+    import os
+
+    # 環境変数から認証情報を取得
+    username = os.getenv('TWITTER_USERNAME')
+    password = os.getenv('TWITTER_PASSWORD')
+    monitor_account = os.getenv('MONITOR_ACCOUNT')
+
+    # リプライメッセージのリスト
     reply_texts = [
         "Thank you for your tweet!",
-        "Great post!",
-        "Interesting thoughts!",
-        "I enjoyed reading this!",
-        "Nice tweet!"
+        "We appreciate your feedback!",
+        "Stay tuned for more updates!"
     ]
-    bot = TwitterBot(username="username", password="password", reply_texts=reply_texts, monitor_account="monitor_account")
+
+    # ボットの初期化
+    bot = TwitterBot(username=username, password=password, reply_texts=reply_texts, monitor_account=monitor_account)
+
+    # ボットの実行
     asyncio.run(bot.monitor_and_reply())
