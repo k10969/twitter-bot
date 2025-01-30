@@ -22,8 +22,12 @@ class TwitterBot:
         if os.path.exists(self.cookie_path):
             self.twikit_client.load_cookies(self.cookie_path)
         else:
-            await self.twikit_client.login(auth_info_1='maverickavuandrews@outlook.com', auth_info_2=self.username, password=self.password)
-            self.twikit_client.save_cookies(self.cookie_path)
+            try:
+                await self.twikit_client.login(auth_info_1='maverickavuandrews@outlook.com', auth_info_2=self.username, password=self.password)
+                self.twikit_client.save_cookies(self.cookie_path)
+            except twikit.errors.TwitterException as e:
+                print(f"Login error: {e}")
+                return
 
         # 初回実行時に最新ツイートIDを取得
         user = await self.twikit_client.get_user_by_screen_name(self.monitor_account)
