@@ -28,7 +28,7 @@ class TwitterBot:
                 if os.path.exists(cookie_path):
                     client.load_cookies(cookie_path)
                 else:
-                    await client.login(auth_info_1=username, auth_info_2=username, password=password)
+                    await client.login(auth_info_1=username, password=password)
                     client.save_cookies(cookie_path)
 
                 self.clients[username] = client
