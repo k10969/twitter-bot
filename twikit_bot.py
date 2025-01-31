@@ -2,7 +2,6 @@ import twikit
 import asyncio
 import os
 import random
-import time
 
 # Twitterアカウントの監視とリプライを行うボット
 class TwitterBot:
@@ -15,8 +14,8 @@ class TwitterBot:
 
         # アカウントごとにクライアントを準備
         for account in monitor_accounts:
-            username = os.getenv(f'TWITTER_ACCOUNT_{account}_USERNAME')
-            password = os.getenv(f'TWITTER_ACCOUNT_{account}_PASSWORD')
+            username = os.getenv(f'TWITTER_USERNAME_{account}')
+            password = os.getenv(f'TWITTER_PASSWORD_{account}')
             if username and password:
                 self.twikit_clients[account] = {
                     'username': username,
@@ -51,6 +50,7 @@ class TwitterBot:
             try:
                 # 初回実行時に最新ツイートIDを取得
                 user = await client.get_user_by_screen_name(account)
+                print(f"Searching for latest tweets from {account}...")  # ログ追加
                 tweets = await client.get_user_tweets(user.id, 'Tweets', count=1)
                 last_tweet_id = tweets[0].id if tweets else None
                 self.twikit_clients[account]['last_tweet_id'] = last_tweet_id
@@ -68,11 +68,12 @@ class TwitterBot:
                             await client.create_tweet(text=reply_text, reply_to=latest_tweet.id)
                             self.replies_sent_today[account] += 1
                             last_tweet_id = latest_tweet.id
-                            print(f"Replied to tweet {latest_tweet.id}")
+                            print(f"Replied to tweet from {account}: {latest_tweet.text}")  # ログ追加
                         else:
                             print(f"No new tweets to reply to from {account}.")  # Debug log
                     else:
                         print(f"Daily reply limit reached for {account}.")
+                        break  # リプライ送信数が制限に達したらループを終了
                     
                     # ランダムな間隔でスリープ（凍結対策）
                     await asyncio.sleep(random.randint(300, 600))  # 5〜10分の間でランダムに待機
@@ -94,8 +95,8 @@ if __name__ == "__main__":
         "Stay tuned for more updates!"
     ]
 
-    # 監視するアカウント（環境変数でカンマ区切りのアカウントリストを指定）
-    monitor_accounts = os.getenv('MONITOR_ACCOUNT', '').split(',')
+    # 監視するアカウント（環境変数で複数指定）
+    monitor_accounts = [os.getenv(f'MONITOR_ACCOUNT_{i}') for i in range(1, 11) if os.getenv(f'MONITOR_ACCOUNT_{i}')]
 
     # ボットの初期化
     bot = TwitterBot(reply_texts=reply_texts, monitor_accounts=monitor_accounts)
