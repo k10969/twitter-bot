@@ -12,7 +12,11 @@ class TwitterBot:
         self.clients = {}
         self.replies_sent_today = {account["username"]: 0 for account in self.accounts}
         self.last_reply_texts = {account["username"]: {} for account in self.accounts}
-        self.cookie_path_template = os.path.expanduser("~/.config/twikit/{username}_cookies.json")
+
+        # Cookieを保存するディレクトリの作成
+        self.cookie_dir = os.path.expanduser("~/.config/twikit/")
+        os.makedirs(self.cookie_dir, exist_ok=True)  # 🔹 ここでディレクトリ作成
+        self.cookie_path_template = os.path.join(self.cookie_dir, "{username}_cookies.json")
 
     async def login_all_accounts(self):
         for account in self.accounts:
