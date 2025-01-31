@@ -15,7 +15,6 @@ class TwitterBot:
         self.cookie_path_template = os.path.expanduser("~/.config/twikit/{username}_cookies.json")
 
     async def login_all_accounts(self):
-        """ 全アカウントでログイン処理 """
         for account in self.accounts:
             username, password = account["username"], account["password"]
             cookie_path = self.cookie_path_template.format(username=username)
@@ -35,7 +34,6 @@ class TwitterBot:
                 print(f"[ERROR] {username} - ログイン失敗: {e}")
 
     async def monitor_and_reply(self, username, client):
-        """ 指定アカウントでツイートを監視し、リプライを送信 """
         last_tweet_ids = {account: None for account in self.monitor_accounts}
 
         while True:
@@ -57,41 +55,36 @@ class TwitterBot:
                             self.last_reply_texts[username][account] = reply_text
                             print(f"[INFO] {username} - {account} にリプライ: {reply_text}")
 
-                            await asyncio.sleep(5)  # APIリクエスト間隔
+                            await asyncio.sleep(5)
 
                 else:
                     print(f"[INFO] {username} - 1日のリプライ上限に達しました")
 
-                await asyncio.sleep(random.randint(180, 600))  # 3分〜10分待機
+                await asyncio.sleep(random.randint(180, 600))
 
             except Exception as e:
                 print(f"[ERROR] {username} - エラー発生: {e}")
-                await asyncio.sleep(600)  # 10分待機後に再試行
+                await asyncio.sleep(600)
 
     async def start_all(self):
-        """ すべてのアカウントで監視を開始 """
         await self.login_all_accounts()
         tasks = [self.monitor_and_reply(username, client) for username, client in self.clients.items()]
         await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
-    # 環境変数からアカウント情報を取得
+    # アカウント情報を取得
     accounts = [
         {"username": os.getenv(f"TWITTER_USERNAME_{i}"), "password": os.getenv(f"TWITTER_PASSWORD_{i}")}
         for i in range(1, 11)
         if os.getenv(f"TWITTER_USERNAME_{i}") and os.getenv(f"TWITTER_PASSWORD_{i}")
     ]
-    
-    # 環境変数から監視するアカウントを取得
-    monitor_accounts = [
-        os.getenv(f"MONITOR_ACCOUNT_{i}") for i in range(1, 11) if os.getenv(f"MONITOR_ACCOUNT_{i}")
-    ]
 
-    # リプライメッセージのリスト
-    reply_texts = [
-        "Thank you!", "Great post!", "Nice update!", "Awesome work!", "Keep it up!", "🔥🔥🔥"
-    ]
+    # 監視するアカウントをコンマ区切りで取得
+    monitor_accounts = os.getenv("MONITOR_ACCOUNT", "").split(",")
+    monitor_accounts = [acc.strip() for acc in monitor_accounts if acc.strip()]
 
-    # ボットの実行
+    # リプライメッセージ
+    reply_texts = ["Thank you!", "Great post!", "Nice update!", "Awesome work!", "Keep it up!", "🔥🔥🔥"]
+
     bot = TwitterBot(accounts=accounts, monitor_accounts=monitor_accounts, reply_texts=reply_texts)
     asyncio.run(bot.start_all())
