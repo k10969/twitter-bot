@@ -3,78 +3,95 @@ import asyncio
 import os
 import random
 
-# Twitterアカウントの監視とリプライを行うボット
 class TwitterBot:
-    def __init__(self, reply_texts, monitor_account):
-        self.username = os.getenv('TWITTER_USERNAME')
-        self.password = os.getenv('TWITTER_PASSWORD')
+    def __init__(self, accounts, monitor_accounts, reply_texts):
+        self.accounts = accounts
+        self.monitor_accounts = monitor_accounts
         self.reply_texts = reply_texts
-        self.monitor_account = monitor_account
-        self.twikit_client = twikit.Client('ja')
-        self.replies_sent_today = 0
-        self.cookie_path = os.path.expanduser("~/.config/twikit/twikit_cookies.json")
+        self.extra_words = ["Nice!", "Cool!", "Awesome!", "Great!", "🔥", "😊", "💡"]
+        self.clients = {}
+        self.replies_sent_today = {account["username"]: 0 for account in self.accounts}
+        self.last_reply_texts = {account["username"]: {} for account in self.accounts}
+        self.cookie_path_template = os.path.expanduser("~/.config/twikit/{username}_cookies.json")
 
-    async def monitor_and_reply(self):
-        last_tweet_id = None
-        cookie_dir = os.path.dirname(self.cookie_path)
-        if not os.path.exists(cookie_dir):
-            os.makedirs(cookie_dir)
-        if os.path.exists(self.cookie_path):
-            self.twikit_client.load_cookies(self.cookie_path)
-        else:
+    async def login_all_accounts(self):
+        """ 全アカウントでログイン処理 """
+        for account in self.accounts:
+            username, password = account["username"], account["password"]
+            cookie_path = self.cookie_path_template.format(username=username)
+            client = twikit.Client('ja')
+
             try:
-                await self.twikit_client.login(auth_info_1=self.username, auth_info_2=self.username, password=self.password)
-                self.twikit_client.save_cookies(self.cookie_path)
-            except twikit.errors.TwitterException as e:
-                print(f"Login error: {e}")
-                return
+                if os.path.exists(cookie_path):
+                    client.load_cookies(cookie_path)
+                else:
+                    await client.login(auth_info_1=username, auth_info_2=username, password=password)
+                    client.save_cookies(cookie_path)
 
-        # 初回実行時に最新ツイートIDを取得
-        user = await self.twikit_client.get_user_by_screen_name(self.monitor_account)
-        tweets = await self.twikit_client.get_user_tweets(user.id, 'Tweets', count=1)
-        if tweets:
-            last_tweet_id = tweets[0].id
+                self.clients[username] = client
+                print(f"[INFO] {username} - ログイン成功")
+
+            except Exception as e:
+                print(f"[ERROR] {username} - ログイン失敗: {e}")
+
+    async def monitor_and_reply(self, username, client):
+        """ 指定アカウントでツイートを監視し、リプライを送信 """
+        last_tweet_ids = {account: None for account in self.monitor_accounts}
 
         while True:
             try:
-                if self.replies_sent_today < 40:
-                    print("Checking for new tweets...")  # Debug log
-                    tweets = await self.twikit_client.get_user_tweets(user.id, 'Tweets', count=1)
-                    latest_tweet = tweets[0] if tweets else None
-                    if latest_tweet:
-                        print(f"Latest tweet ID: {latest_tweet.id}")  # Debug log
-                    if latest_tweet and latest_tweet.id != last_tweet_id:
-                        reply_text = random.choice(self.reply_texts)
-                        print(f"Replying to tweet ID: {latest_tweet.id} with: {reply_text}")  # Debug log
-                        await self.twikit_client.create_tweet(text=reply_text, reply_to=latest_tweet.id)
-                        self.replies_sent_today += 1
-                        last_tweet_id = latest_tweet.id
-                        print(f"Replied to tweet {latest_tweet.id}")
-                    else:
-                        print("No new tweets to reply to.")  # Debug log
+                if self.replies_sent_today[username] < 30:
+                    for account in self.monitor_accounts:
+                        user = await client.get_user_by_screen_name(account)
+                        tweets = await client.get_user_tweets(user.id, 'Tweets', count=1)
+                        latest_tweet = tweets[0] if tweets else None
+
+                        if latest_tweet and latest_tweet.id != last_tweet_ids[account]:
+                            reply_text = random.choice(self.reply_texts)
+                            if reply_text == self.last_reply_texts[username].get(account, ""):
+                                reply_text += " " + random.choice(self.extra_words)
+
+                            await client.create_tweet(text=reply_text, reply_to=latest_tweet.id)
+                            self.replies_sent_today[username] += 1
+                            last_tweet_ids[account] = latest_tweet.id
+                            self.last_reply_texts[username][account] = reply_text
+                            print(f"[INFO] {username} - {account} にリプライ: {reply_text}")
+
+                            await asyncio.sleep(5)  # APIリクエスト間隔
+
                 else:
-                    print("Daily reply limit reached.")
-                await asyncio.sleep(300)  # 5分ごとにチェック
+                    print(f"[INFO] {username} - 1日のリプライ上限に達しました")
+
+                await asyncio.sleep(random.randint(180, 600))  # 3分〜10分待機
+
             except Exception as e:
-                print(f"Error occurred: {e}")
-                await asyncio.sleep(600)  # エラー発生時は10分待機
+                print(f"[ERROR] {username} - エラー発生: {e}")
+                await asyncio.sleep(600)  # 10分待機後に再試行
 
-        await self.twikit_client.logout()
+    async def start_all(self):
+        """ すべてのアカウントで監視を開始 """
+        await self.login_all_accounts()
+        tasks = [self.monitor_and_reply(username, client) for username, client in self.clients.items()]
+        await asyncio.gather(*tasks)
 
-# 使用例
 if __name__ == "__main__":
-    # リプライメッセージのリスト
-    reply_texts = [
-        "Thank you for your tweet!",
-        "We appreciate your feedback!",
-        "Stay tuned for more updates!"
+    # 環境変数からアカウント情報を取得
+    accounts = [
+        {"username": os.getenv(f"TWITTER_USERNAME_{i}"), "password": os.getenv(f"TWITTER_PASSWORD_{i}")}
+        for i in range(1, 11)
+        if os.getenv(f"TWITTER_USERNAME_{i}") and os.getenv(f"TWITTER_PASSWORD_{i}")
+    ]
+    
+    # 環境変数から監視するアカウントを取得
+    monitor_accounts = [
+        os.getenv(f"MONITOR_ACCOUNT_{i}") for i in range(1, 11) if os.getenv(f"MONITOR_ACCOUNT_{i}")
     ]
 
-    # 監視するアカウント
-    monitor_account = os.getenv('MONITOR_ACCOUNT')
-
-    # ボットの初期化
-    bot = TwitterBot(reply_texts=reply_texts, monitor_account=monitor_account)
+    # リプライメッセージのリスト
+    reply_texts = [
+        "Thank you!", "Great post!", "Nice update!", "Awesome work!", "Keep it up!", "🔥🔥🔥"
+    ]
 
     # ボットの実行
-    asyncio.run(bot.monitor_and_reply())
+    bot = TwitterBot(accounts=accounts, monitor_accounts=monitor_accounts, reply_texts=reply_texts)
+    asyncio.run(bot.start_all())
